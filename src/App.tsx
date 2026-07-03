@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, Send, Globe, Plus, Minus, Trash2, Edit2, Check, Sun, Moon, FishSymbol, Sparkles, X, Download } from 'lucide-react';
 import { menuItems as initialMenuItems, translations } from './data';
 import { Language, CartItem, MenuItem } from './types';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 export default function App() {
   const [lang, setLang] = useState<Language>(() => {
@@ -29,6 +29,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [generatedInvoiceImg, setGeneratedInvoiceImg] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { localStorage.setItem('dar_albahr_menu_v10', JSON.stringify(menu)); }, [menu]);
@@ -104,24 +105,44 @@ export default function App() {
 
   const handleDownloadInvoice = async () => {
     if (!invoiceRef.current) return;
+    setIsDownloading(true);
     try {
-      const canvas = await html2canvas(invoiceRef.current, { 
-        scale: 2,
-        useCORS: true,
+      const dataUrl = await toPng(invoiceRef.current, { 
+        pixelRatio: 2,
         backgroundColor: '#ffffff'
       });
-      const image = canvas.toDataURL('image/png');
-      setGeneratedInvoiceImg(image);
+      setGeneratedInvoiceImg(dataUrl);
       
-      // Try to download, it might fail silently in iframes
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `Invoice_Dar_Al_Bahr_Table_${tableNumber || 'Order'}.png`, { type: 'image/png' });
+
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: lang === 'ar' ? 'فاتورة دار البحر' : 'Dar Al Bahr Invoice',
+          });
+          return;
+        }
+      } catch (shareErr) {
+        console.log('Share failed or was cancelled', shareErr);
+      }
+      
+      // Fallback
+      const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = image;
-      link.download = `Invoice_Dar_Al_Bahr_Table_${tableNumber || 'Order'}.png`;
+      link.href = objectUrl;
+      link.download = file.name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
     } catch (err) {
       console.error("Failed to download invoice", err);
+      alert(lang === 'ar' ? 'عذراً، حدث خطأ أثناء تحميل الفاتورة' : 'Sorry, an error occurred while downloading the invoice');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -588,19 +609,37 @@ export default function App() {
               {!generatedInvoiceImg && (
                 <button
                   onClick={handleDownloadInvoice}
-                  className="w-full bg-[#133c38] hover:bg-[#0f2e2b] text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+                  disabled={isDownloading}
+                  className={`w-full ${isDownloading ? 'bg-[#133c38]/70 cursor-not-allowed' : 'bg-[#133c38] hover:bg-[#0f2e2b] hover:shadow-lg'} text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md`}
                 >
-                  <Download className="w-6 h-6" />
-                  <span>{lang === 'ar' ? 'تحميل الفاتورة' : 'Download Invoice'}</span>
+                  {isDownloading ? (
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Download className="w-6 h-6" />
+                  )}
+                  <span>
+                    {isDownloading 
+                      ? (lang === 'ar' ? 'جاري التحضير...' : 'Processing...') 
+                      : (lang === 'ar' ? 'تحميل أو مشاركة الفاتورة' : 'Download or Share Invoice')
+                    }
+                  </span>
                 </button>
               )}
               {generatedInvoiceImg && (
-                <button
-                  onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
-                >
-                  <span>{lang === 'ar' ? 'إغلاق' : 'Close'}</span>
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+                  >
+                    <span>{lang === 'ar' ? 'إغلاق' : 'Close'}</span>
+                  </button>
+                  <button
+                    onClick={() => setGeneratedInvoiceImg(null)}
+                    className="w-full bg-transparent hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>{lang === 'ar' ? 'الرجوع للفاتورة' : 'Back to Invoice'}</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
