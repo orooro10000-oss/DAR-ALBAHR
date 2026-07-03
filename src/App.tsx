@@ -28,6 +28,7 @@ export default function App() {
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [generatedInvoiceImg, setGeneratedInvoiceImg] = useState<string | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { localStorage.setItem('dar_albahr_menu_v10', JSON.stringify(menu)); }, [menu]);
@@ -110,6 +111,9 @@ export default function App() {
         backgroundColor: '#ffffff'
       });
       const image = canvas.toDataURL('image/png');
+      setGeneratedInvoiceImg(image);
+      
+      // Try to download, it might fail silently in iframes
       const link = document.createElement('a');
       link.href = image;
       link.download = `Invoice_Dar_Al_Bahr_Table_${tableNumber || 'Order'}.png`;
@@ -488,58 +492,79 @@ export default function App() {
       )}
       {/* Invoice Modal */}
       {showInvoice && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm transition-opacity" onClick={() => setShowInvoice(false)}>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm transition-opacity" onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }}>
           <div className="bg-white rounded-[2rem] w-full max-w-md mx-auto overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold text-slate-800">{lang === 'ar' ? 'الفاتورة' : 'Invoice'}</h2>
-              <button onClick={() => setShowInvoice(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+              <button onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 bg-white" ref={invoiceRef}>
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#133c38] text-white mb-3">
-                  <FishSymbol className="w-8 h-8" />
+            <div className="p-6 overflow-y-auto flex-1 bg-white relative">
+              {generatedInvoiceImg ? (
+                <div className="text-center">
+                  <p className="text-sm text-teal-700 bg-teal-50 p-3 rounded-xl mb-4 border border-teal-100 font-medium">
+                    {lang === 'ar' ? 'قم بالضغط مطولاً على الصورة لحفظها في هاتفك' : 'Long press the image to save it to your device'}
+                  </p>
+                  <img src={generatedInvoiceImg} alt="Invoice" className="w-full h-auto rounded-xl shadow-sm border border-gray-100" />
                 </div>
-                <h1 className="text-2xl font-black text-slate-800">دار البحر</h1>
-                <p className="text-sm text-slate-500">Dar Al Bahr</p>
-                <div className="mt-2 text-sm font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1 rounded-full">
-                  {lang === 'ar' ? 'طاولة رقم' : 'Table'}: {tableNumber}
-                </div>
-              </div>
-
-              <div className="border-t border-dashed border-gray-300 pt-4 mb-4">
-                {cart.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-start mb-3 text-sm">
-                    <div className="flex-1 pr-4">
-                      <span className="font-bold text-slate-800">{item.quantity}x</span> {item.menuItem.name[lang]}
+              ) : (
+                <div ref={invoiceRef} className="bg-white">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#133c38] text-white mb-3">
+                      <FishSymbol className="w-8 h-8" />
                     </div>
-                    <div className="font-bold text-slate-800 whitespace-nowrap">
-                      {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
+                    <h1 className="text-2xl font-black text-slate-800">دار البحر</h1>
+                    <p className="text-sm text-slate-500">Dar Al Bahr</p>
+                    <div className="mt-2 text-sm font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1 rounded-full">
+                      {lang === 'ar' ? 'طاولة رقم' : 'Table'}: {tableNumber}
                     </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="border-t border-dashed border-gray-300 pt-4 flex justify-between items-center">
-                <span className="text-lg font-bold text-slate-800">{t.total}</span>
-                <span className="text-2xl font-black text-[#e65c3b]">{totalPrice.toFixed(2)} {t.currency}</span>
-              </div>
-              
-              <div className="mt-8 text-center text-xs text-slate-400">
-                {lang === 'ar' ? 'شكرا لزيارتكم!' : 'Thank you for your visit!'}
-              </div>
+                  <div className="border-t border-dashed border-gray-300 pt-4 mb-4">
+                    {cart.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-start mb-3 text-sm">
+                        <div className="flex-1 pr-4">
+                          <span className="font-bold text-slate-800">{item.quantity}x</span> {item.menuItem.name[lang]}
+                        </div>
+                        <div className="font-bold text-slate-800 whitespace-nowrap">
+                          {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-dashed border-gray-300 pt-4 flex justify-between items-center">
+                    <span className="text-lg font-bold text-slate-800">{t.total}</span>
+                    <span className="text-2xl font-black text-[#e65c3b]">{totalPrice.toFixed(2)} {t.currency}</span>
+                  </div>
+                  
+                  <div className="mt-8 text-center text-xs text-slate-400">
+                    {lang === 'ar' ? 'شكرا لزيارتكم!' : 'Thank you for your visit!'}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-6 bg-slate-50 border-t border-gray-100 shrink-0">
-              <button
-                onClick={handleDownloadInvoice}
-                className="w-full bg-[#133c38] hover:bg-[#0f2e2b] text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
-              >
-                <Download className="w-6 h-6" />
-                <span>{lang === 'ar' ? 'تحميل الفاتورة' : 'Download Invoice'}</span>
-              </button>
+              {!generatedInvoiceImg && (
+                <button
+                  onClick={handleDownloadInvoice}
+                  className="w-full bg-[#133c38] hover:bg-[#0f2e2b] text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+                >
+                  <Download className="w-6 h-6" />
+                  <span>{lang === 'ar' ? 'تحميل الفاتورة' : 'Download Invoice'}</span>
+                </button>
+              )}
+              {generatedInvoiceImg && (
+                <button
+                  onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+                >
+                  <span>{lang === 'ar' ? 'إغلاق' : 'Close'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
