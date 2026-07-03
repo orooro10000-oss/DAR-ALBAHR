@@ -510,38 +510,75 @@ export default function App() {
                   <img src={generatedInvoiceImg} alt="Invoice" className="w-full h-auto rounded-xl shadow-sm border border-gray-100" />
                 </div>
               ) : (
-                <div ref={invoiceRef} className="bg-white">
+                <div ref={invoiceRef} className="bg-white p-8 max-w-sm mx-auto border border-gray-200 shadow-sm rounded-xl">
+                  {/* Header */}
                   <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#133c38] text-white mb-3">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#133c38] text-white mb-4 shadow-md">
                       <FishSymbol className="w-8 h-8" />
                     </div>
-                    <h1 className="text-2xl font-black text-slate-800">دار البحر</h1>
-                    <p className="text-sm text-slate-500">Dar Al Bahr</p>
-                    <div className="mt-2 text-sm font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1 rounded-full">
-                      {lang === 'ar' ? 'طاولة رقم' : 'Table'}: {tableNumber}
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">دار البحر</h1>
+                    <p className="text-sm font-medium text-slate-500 uppercase tracking-widest mt-1">Dar Al Bahr</p>
+                    <p className="text-xs text-slate-400 mt-1">Restaurant & Cafe</p>
+                  </div>
+
+                  {/* Order Info */}
+                  <div className="border-t border-b border-gray-100 py-3 mb-6 text-sm flex justify-between text-slate-600">
+                    <div>
+                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'التاريخ' : 'Date'}:</span> {new Date().toLocaleDateString('en-GB')}</p>
+                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'الوقت' : 'Time'}:</span> {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <div className="text-right">
+                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'رقم الطلب' : 'Order'}:</span> #{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</p>
+                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'طاولة' : 'Table'}:</span> {tableNumber || '-'}</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-dashed border-gray-300 pt-4 mb-4">
+                  {/* Items Header */}
+                  <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100">
+                    <span className="w-8">{lang === 'ar' ? 'كمية' : 'Qty'}</span>
+                    <span className="flex-1">{lang === 'ar' ? 'الصنف' : 'Item'}</span>
+                    <span className="text-right">{lang === 'ar' ? 'المجموع' : 'Total'}</span>
+                  </div>
+
+                  {/* Items */}
+                  <div className="space-y-3 mb-6">
                     {cart.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-start mb-3 text-sm">
+                      <div key={idx} className="flex justify-between items-start text-sm">
+                        <div className="w-8 font-bold text-slate-800">{item.quantity}</div>
                         <div className="flex-1 pr-4">
-                          <span className="font-bold text-slate-800">{item.quantity}x</span> {item.menuItem.name[lang]}
+                          <p className="font-bold text-slate-800">{item.menuItem.name[lang]}</p>
+                          <p className="text-xs text-slate-500">{item.menuItem.price.toFixed(2)} {t.currency}</p>
                         </div>
-                        <div className="font-bold text-slate-800 whitespace-nowrap">
+                        <div className="font-bold text-slate-800 whitespace-nowrap text-right">
                           {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="border-t border-dashed border-gray-300 pt-4 flex justify-between items-center">
-                    <span className="text-lg font-bold text-slate-800">{t.total}</span>
-                    <span className="text-2xl font-black text-[#e65c3b]">{totalPrice.toFixed(2)} {t.currency}</span>
+                  {/* Totals */}
+                  <div className="border-t-2 border-dashed border-gray-200 pt-4 mb-8">
+                    <div className="flex justify-between items-center mb-2 text-slate-600 text-sm">
+                      <span>{lang === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
+                      <span>{totalPrice.toFixed(2)} {t.currency}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-lg font-black text-slate-800 mt-2 pt-2 border-t border-gray-100">
+                      <span>{t.total}</span>
+                      <span className="text-2xl text-[#133c38]">{totalPrice.toFixed(2)} {t.currency}</span>
+                    </div>
                   </div>
                   
-                  <div className="mt-8 text-center text-xs text-slate-400">
-                    {lang === 'ar' ? 'شكرا لزيارتكم!' : 'Thank you for your visit!'}
+                  {/* Footer */}
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-slate-800 mb-1">
+                      {lang === 'ar' ? 'شكرا لزيارتكم!' : 'Thank you for your visit!'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {lang === 'ar' ? 'نتمنى رؤيتكم قريباً' : 'Hope to see you soon'}
+                    </p>
+                    <div className="mt-4 text-slate-300">
+                      <Sparkles className="w-4 h-4 mx-auto" />
+                    </div>
                   </div>
                 </div>
               )}
