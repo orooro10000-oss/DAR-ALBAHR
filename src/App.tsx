@@ -146,6 +146,14 @@ export default function App() {
     }
   };
 
+  const finishOrder = () => {
+    setCart([]);
+    setTableNumber('');
+    setShowInvoice(false);
+    setGeneratedInvoiceImg(null);
+    setIsCartOpen(false);
+  };
+
   // Group items by category
   const categories = menu.reduce((acc, item) => {
     const cat = item.category ? item.category[lang] : (lang === 'ar' ? 'أخرى' : 'Others');
@@ -628,10 +636,11 @@ export default function App() {
               {generatedInvoiceImg && (
                 <div className="space-y-3">
                   <button
-                    onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+                    onClick={finishOrder}
+                    className="w-full bg-[#133c38] hover:bg-[#0f2e2b] text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
                   >
-                    <span>{lang === 'ar' ? 'إغلاق' : 'Close'}</span>
+                    <Check className="w-6 h-6" />
+                    <span>{lang === 'ar' ? 'إنهاء الطلب جديد' : 'Finish & New Order'}</span>
                   </button>
                   <button
                     onClick={() => setGeneratedInvoiceImg(null)}
