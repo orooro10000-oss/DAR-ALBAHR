@@ -1,0 +1,6 @@
+{
+  "name": "Bilingual Seafood Menu",
+  "description": "A bilingual English/Arabic seafood restaurant menu with WhatsApp ordering.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
