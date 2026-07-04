@@ -188,7 +188,6 @@ export default function App() {
         pixelRatio: 2,
         backgroundColor: '#ffffff'
       });
-      setGeneratedInvoiceImg(dataUrl);
       
       const response = await fetch(dataUrl);
       const blob = await response.blob();
@@ -200,10 +199,13 @@ export default function App() {
             files: [file],
             title: lang === 'ar' ? 'فاتورة دار البحر' : 'Dar Al Bahr Invoice',
           });
+          finishOrder();
           return;
         }
       } catch (shareErr) {
         console.log('Share failed or was cancelled', shareErr);
+        finishOrder();
+        return;
       }
       
       // Fallback
@@ -215,6 +217,7 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(objectUrl);
+      finishOrder();
     } catch (err) {
       console.error("Failed to download invoice", err);
       alert(lang === 'ar' ? 'عذراً، حدث خطأ أثناء تحميل الفاتورة' : 'Sorry, an error occurred while downloading the invoice');
@@ -836,7 +839,7 @@ export default function App() {
             </div>
 
             <div className="p-6 bg-slate-50 border-t border-gray-100 dark:border-slate-700 shrink-0">
-              {!generatedInvoiceImg && (
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={handleDownloadInvoice}
                   disabled={isDownloading}
@@ -850,28 +853,19 @@ export default function App() {
                   <span>
                     {isDownloading 
                       ? (lang === 'ar' ? 'جاري التحضير...' : 'Processing...') 
-                      : (lang === 'ar' ? 'تحميل أو مشاركة الفاتورة' : 'Download or Share Invoice')
+                      : (lang === 'ar' ? 'تحميل الفاتورة' : 'Download Invoice')
                     }
                   </span>
                 </button>
-              )}
-              {generatedInvoiceImg && (
-                <div className="space-y-3">
-                  <button
-                    onClick={finishOrder}
-                    className="w-full bg-[#133c38] hover:bg-[#0f2e2b] text-white px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
-                  >
-                    <Check className="w-6 h-6" />
-                    <span>{lang === 'ar' ? 'إنهاء الطلب جديد' : 'Finish & New Order'}</span>
-                  </button>
-                  <button
-                    onClick={() => setGeneratedInvoiceImg(null)}
-                    className="w-full bg-transparent hover:bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>{lang === 'ar' ? 'الرجوع للفاتورة' : 'Back to Invoice'}</span>
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={finishOrder}
+                  disabled={isDownloading}
+                  className={`w-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-sm ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Check className="w-6 h-6" />
+                  <span>{lang === 'ar' ? 'إنهاء الطلب بدون تحميل' : 'Finish Without Downloading'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
