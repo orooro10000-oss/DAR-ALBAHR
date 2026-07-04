@@ -1,8 +1,29 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingBag, Send, Globe, Plus, Minus, Trash2, Edit2, Check, Sun, Moon, FishSymbol, Sparkles, X, Download } from 'lucide-react';
+import { 
+  ShoppingBag, Send, Globe, Plus, Minus, Trash2, Edit2, Check, Sun, Moon, FishSymbol, Sparkles, X, Download,
+  Fish, Flame, Soup, Beef, Salad, Utensils, Droplet, Coffee, CupSoda, GlassWater, UtensilsCrossed
+} from 'lucide-react';
 import { menuItems as initialMenuItems, translations } from './data';
 import { Language, CartItem, MenuItem } from './types';
 import { toPng } from 'html-to-image';
+
+const getIconForItem = (id: string, className: string = "w-10 h-10") => {
+  if (id.includes('friture') || id.includes('fish')) return <Fish className={className} />;
+  if (id.includes('sardine')) return <FishSymbol className={className} />;
+  if (id.includes('grilled')) return <Flame className={className} />;
+  if (id.includes('meat') || id.includes('beef')) return <Beef className={className} />;
+  if (id.includes('chicken')) return <UtensilsCrossed className={className} />;
+  if (id.includes('tagine')) return <Soup className={className} />;
+  if (id.includes('bissara')) return <Soup className={className} />;
+  if (id.includes('salad')) return <Salad className={className} />;
+  if (id.includes('fries')) return <Utensils className={className} />;
+  if (id.includes('sauce')) return <Droplet className={className} />;
+  if (id.includes('rice') || id.includes('paella')) return <Soup className={className} />;
+  if (id.includes('water')) return <GlassWater className={className} />;
+  if (id.includes('soda')) return <CupSoda className={className} />;
+  if (id.includes('tea') || id.includes('coffee')) return <Coffee className={className} />;
+  return <Utensils className={className} />;
+};
 
 export default function App() {
   const [lang, setLang] = useState<Language>(() => {
@@ -30,7 +51,19 @@ export default function App() {
   const [showInvoice, setShowInvoice] = useState(false);
   const [generatedInvoiceImg, setGeneratedInvoiceImg] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('dar_albahr_theme') === 'dark';
+  });
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('dar_albahr_theme', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   useEffect(() => { localStorage.setItem('dar_albahr_menu_v10', JSON.stringify(menu)); }, [menu]);
   useEffect(() => { localStorage.setItem('dar_albahr_lang', lang); }, [lang]);
@@ -173,19 +206,27 @@ export default function App() {
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className={`min-h-screen font-sans bg-[#f8f6f0] text-slate-800 pb-40 ${isRtl ? 'font-arabic' : ''}`}>
+    <div dir={isRtl ? 'rtl' : 'ltr'} className={`min-h-screen font-sans bg-[#f8f6f0] dark:bg-slate-900 text-slate-800 dark:text-slate-100 pb-40 ${isRtl ? 'font-arabic' : ''}`}>
       {/* Header Area */}
       <header className="bg-[#133c38] text-white rounded-b-[2rem] shadow-md pb-6 px-4 pt-8">
         <div className="max-w-xl mx-auto">
           <div className="flex justify-between items-start mb-6">
-            <button 
-              onClick={toggleLanguage}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors px-4 py-1.5 rounded-full text-sm font-medium border border-white/20"
-            >
-              <span className={lang === 'ar' ? 'font-bold' : ''}>عربي</span>
-              <span className="text-white/40">|</span>
-              <span className={lang === 'en' ? 'font-bold' : ''}>EN</span>
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors px-4 py-1.5 rounded-full text-sm font-medium border border-white/20"
+              >
+                <span className={lang === 'ar' ? 'font-bold' : ''}>عربي</span>
+                <span className="text-white/40">|</span>
+                <span className={lang === 'en' ? 'font-bold' : ''}>EN</span>
+              </button>
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white border border-white/20 transition-colors"
+              >
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+            </div>
             <div className="flex items-center gap-3 text-right">
               <div>
                 <h1 className="text-2xl font-black tracking-tight">{t.restaurantName}</h1>
@@ -210,7 +251,7 @@ export default function App() {
             className={`shrink-0 px-6 py-2 rounded-full font-bold transition-all border snap-center ${
               activeCategory === 'all' 
                 ? 'bg-[#247065] text-white border-[#247065] shadow-md' 
-                : 'bg-white text-teal-900 border-gray-200 shadow-sm'
+                : 'bg-white dark:bg-slate-800 text-teal-900 dark:text-teal-100 border-gray-200 dark:border-slate-600 shadow-sm'
             }`}
           >
             {t.all}
@@ -222,7 +263,7 @@ export default function App() {
               className={`shrink-0 px-6 py-2 rounded-full font-bold transition-all border snap-center ${
                 activeCategory === cat 
                   ? 'bg-[#247065] text-white border-[#247065] shadow-md' 
-                  : 'bg-white text-teal-900 border-gray-200 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-teal-900 dark:text-teal-100 border-gray-200 dark:border-slate-600 shadow-sm'
               }`}
             >
               {cat}
@@ -247,13 +288,9 @@ export default function App() {
                 const quantity = cartItem ? cartItem.quantity : 0;
                 
                 return (
-                  <div key={item.id} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex gap-4 cursor-pointer" onClick={() => !isEditing && setSelectedMenuItem(item)}>
-                    <div className="w-24 h-24 rounded-2xl bg-[#f0e6d2] shrink-0 overflow-hidden flex items-center justify-center p-2">
-                       {item.image ? (
-                          <img src={item.image} alt={item.name[lang]} className="w-full h-full object-cover rounded-xl" />
-                       ) : (
-                          <FishSymbol className="w-8 h-8 text-[#d4c5a9]" />
-                       )}
+                  <div key={item.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex gap-4 cursor-pointer" onClick={() => !isEditing && setSelectedMenuItem(item)}>
+                    <div className="w-24 h-24 rounded-2xl bg-[#f0e6d2] dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center p-2 text-teal-800 dark:text-teal-200">
+                       {getIconForItem(item.id, "w-10 h-10")}
                     </div>
                     
                     <div className="flex-1 flex flex-col justify-between">
@@ -266,7 +303,7 @@ export default function App() {
                             className="font-bold text-lg w-full border-b border-gray-300 outline-none focus:border-teal-600 mb-1"
                           />
                         ) : (
-                          <h3 className="font-bold text-lg text-slate-800 leading-tight">{item.name[lang]}</h3>
+                          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 leading-tight">{item.name[lang]}</h3>
                         )}
                         
                         {isEditing ? (
@@ -300,12 +337,12 @@ export default function App() {
                         
                         {!isEditing && (
                           quantity > 0 ? (
-                            <div className="flex items-center gap-3 bg-[#f8f6f0] rounded-xl p-1 border border-gray-200">
-                              <button onClick={() => updateQuantity(item.id, -1)} className="p-1.5 rounded-lg bg-white shadow-sm text-gray-600 hover:text-red-500">
+                            <div className="flex items-center gap-3 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-600">
+                              <button onClick={() => updateQuantity(item.id, -1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500">
                                 {quantity === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                               </button>
                               <span className="w-4 text-center font-bold text-sm">{quantity}</span>
-                              <button onClick={() => updateQuantity(item.id, 1)} className="p-1.5 rounded-lg bg-white shadow-sm text-teal-700 hover:text-teal-900">
+                              <button onClick={() => updateQuantity(item.id, 1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:text-teal-100">
                                 <Plus className="w-4 h-4" />
                               </button>
                             </div>
@@ -331,7 +368,22 @@ export default function App() {
 
       {/* Floating Cart Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="max-w-xl mx-auto p-4 pointer-events-auto">
+        <div className="max-w-xl mx-auto p-4 pointer-events-auto flex flex-col gap-2">
+          {cart.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-xl border border-gray-100 dark:border-slate-700 flex items-center gap-4">
+              <label htmlFor="mainTableNumber" className="text-sm font-bold text-teal-900 dark:text-teal-100 whitespace-nowrap">
+                {t.tableNumber}:
+              </label>
+              <input
+                id="mainTableNumber"
+                type="text"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                className="flex-1 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl px-4 py-2 border border-gray-200 dark:border-slate-600 focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 outline-none transition-all font-bold"
+                placeholder={lang === 'ar' ? 'أدخل رقم الطاولة' : 'Table num'}
+              />
+            </div>
+          )}
           <div className="bg-[#133c38] rounded-3xl p-4 shadow-2xl flex items-center justify-between text-white border border-teal-700/50">
             <button
               onClick={() => setIsCartOpen(true)}
@@ -362,26 +414,20 @@ export default function App() {
       {/* Item Details Modal */}
       {selectedMenuItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedMenuItem(null)}>
-          <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-            <div className="relative h-64 bg-[#f0e6d2]">
-              {selectedMenuItem.image ? (
-                <img src={selectedMenuItem.image} alt={selectedMenuItem.name[lang]} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <FishSymbol className="w-16 h-16 text-[#d4c5a9]" />
-                </div>
-              )}
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+            <div className="relative h-48 bg-[#f0e6d2] dark:bg-slate-700 flex items-center justify-center text-teal-800 dark:text-teal-200">
+              {getIconForItem(selectedMenuItem.id, "w-24 h-24 opacity-80")}
               <button 
                 onClick={() => setSelectedMenuItem(null)}
-                className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white backdrop-blur-md rounded-full text-slate-800 transition-colors shadow-sm"
+                className="absolute top-4 right-4 p-2 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-md rounded-full text-slate-800 dark:text-slate-100 transition-colors shadow-sm"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
             <div className="p-6">
-              <h3 className="text-2xl font-black text-slate-800 mb-2">{selectedMenuItem.name[lang]}</h3>
-              <p className="text-slate-600 mb-6 leading-relaxed">{selectedMenuItem.description[lang]}</p>
+              <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{selectedMenuItem.name[lang]}</h3>
+              <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">{selectedMenuItem.description[lang]}</p>
               
               <div className="flex items-center justify-between mb-8">
                 <span className="text-2xl font-black text-[#e65c3b]">{selectedMenuItem.price.toFixed(2)} {t.currency}</span>
@@ -394,8 +440,8 @@ export default function App() {
                 
                 return quantity > 0 ? (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between bg-[#f8f6f0] rounded-2xl p-2 border border-gray-200">
-                      <button onClick={() => updateQuantity(selectedMenuItem.id, -1)} className="p-4 rounded-xl bg-white shadow-sm text-gray-600 hover:text-red-500 transition-colors">
+                    <div className="flex items-center justify-between bg-[#f8f6f0] dark:bg-slate-900 rounded-2xl p-2 border border-gray-200 dark:border-slate-600">
+                      <button onClick={() => updateQuantity(selectedMenuItem.id, -1)} className="p-4 rounded-xl bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500 transition-colors">
                         {quantity === 1 ? <Trash2 className="w-5 h-5" /> : <Minus className="w-5 h-5" />}
                       </button>
                       <span className="text-xl font-bold">{quantity}</span>
@@ -428,80 +474,75 @@ export default function App() {
       {/* Cart Modal */}
       {isCartOpen && (
         <div className="fixed inset-0 z-[100] flex flex-col justify-end p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}>
-          <div className="bg-white rounded-[2rem] w-full max-w-xl mx-auto overflow-hidden shadow-2xl animate-in slide-in-from-bottom-8 duration-300 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-xl mx-auto overflow-hidden shadow-2xl animate-in slide-in-from-bottom-8 duration-300 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
             
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
-              <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800 shrink-0">
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <ShoppingBag className="w-6 h-6 text-teal-600" />
                 {lang === 'ar' ? 'طلبك' : 'Your Order'}
               </h2>
               <button 
                 onClick={() => setIsCartOpen(false)}
-                className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition-colors"
+                className="p-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:bg-slate-600 rounded-full text-slate-600 dark:text-slate-300 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-900/50">
               {cart.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
+                <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                   <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-20" />
                   <p>{lang === 'ar' ? 'السلة فارغة' : 'Cart is empty'}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {cart.map((item) => (
-                    <div key={item.menuItem.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                      {item.menuItem.image ? (
-                        <img src={item.menuItem.image} alt={item.menuItem.name[lang]} className="w-16 h-16 rounded-xl object-cover" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
-                          <FishSymbol className="w-8 h-8 text-slate-300" />
-                        </div>
-                      )}
+                    <div key={item.menuItem.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-[#f0e6d2] dark:bg-slate-700 flex items-center justify-center text-teal-800 dark:text-teal-200 shrink-0">
+                        {getIconForItem(item.menuItem.id, "w-8 h-8")}
+                      </div>
                       
                       <div className="flex-1">
-                        <h4 className="font-bold text-slate-800">{item.menuItem.name[lang]}</h4>
+                        <h4 className="font-bold text-slate-800 dark:text-slate-100">{item.menuItem.name[lang]}</h4>
                         <div className="text-[#e65c3b] font-bold text-sm mt-1">
                           {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3 bg-[#f8f6f0] rounded-xl p-1 border border-gray-200 shrink-0">
-                        <button onClick={() => updateQuantity(item.menuItem.id, -1)} className="p-1.5 rounded-lg bg-white shadow-sm text-gray-600 hover:text-red-500">
+                      <div className="flex items-center gap-3 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-600 shrink-0">
+                        <button onClick={() => updateQuantity(item.menuItem.id, -1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500">
                           {item.quantity === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                         </button>
                         <span className="w-6 text-center font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.menuItem.id, 1)} className="p-1.5 rounded-lg bg-white shadow-sm text-teal-700 hover:text-teal-900">
+                        <button onClick={() => updateQuantity(item.menuItem.id, 1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:text-teal-100">
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
-                  
-                  <div className="mt-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                    <label htmlFor="modalTableNumber" className="block text-sm font-bold text-teal-900 mb-3 uppercase tracking-wider">
-                      {t.tableNumber}
-                    </label>
-                    <input
-                      id="modalTableNumber"
-                      type="text"
-                      value={tableNumber}
-                      onChange={(e) => setTableNumber(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-[#f8f6f0] focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 outline-none transition-all text-lg font-bold"
-                      placeholder={lang === 'ar' ? 'أدخل رقم الطاولة هنا (مثال: 5)' : 'Enter table number (e.g., 5)'}
-                    />
-                  </div>
                 </div>
               )}
             </div>
             
             {cart.length > 0 && (
-              <div className="p-6 bg-white border-t border-gray-100 shrink-0">
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-slate-500 font-medium">{t.total}</span>
-                  <span className="text-2xl font-black text-slate-800">{totalPrice.toFixed(2)} {t.currency}</span>
+              <div className="p-6 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 shrink-0">
+                <div className="mb-4">
+                  <label htmlFor="modalTableNumber" className="block text-sm font-bold text-teal-900 dark:text-teal-100 mb-2 uppercase tracking-wider">
+                    {t.tableNumber}
+                  </label>
+                  <input
+                    id="modalTableNumber"
+                    type="text"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-[#f8f6f0] dark:bg-slate-900 focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 outline-none transition-all text-lg font-bold"
+                    placeholder={lang === 'ar' ? 'أدخل رقم الطاولة هنا' : 'Enter table number'}
+                  />
+                </div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">{t.total}</span>
+                  <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{totalPrice.toFixed(2)} {t.currency}</span>
                 </div>
                 <button
                   onClick={() => {
@@ -522,48 +563,48 @@ export default function App() {
       {/* Invoice Modal */}
       {showInvoice && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm transition-opacity" onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }}>
-          <div className="bg-white rounded-[2rem] w-full max-w-md mx-auto overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-              <h2 className="text-xl font-bold text-slate-800">{lang === 'ar' ? 'الفاتورة' : 'Invoice'}</h2>
-              <button onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-md mx-auto overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'الفاتورة' : 'Invoice'}</h2>
+              <button onClick={() => { setShowInvoice(false); setGeneratedInvoiceImg(null); }} className="p-2 hover:bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 bg-white relative">
+            <div className="p-6 overflow-y-auto flex-1 bg-white dark:bg-slate-800 relative">
               {generatedInvoiceImg ? (
                 <div className="text-center">
-                  <p className="text-sm text-teal-700 bg-teal-50 p-3 rounded-xl mb-4 border border-teal-100 font-medium">
+                  <p className="text-sm text-teal-700 dark:text-teal-300 bg-teal-50 p-3 rounded-xl mb-4 border border-teal-100 font-medium">
                     {lang === 'ar' ? 'قم بالضغط مطولاً على الصورة لحفظها في هاتفك' : 'Long press the image to save it to your device'}
                   </p>
-                  <img src={generatedInvoiceImg} alt="Invoice" className="w-full h-auto rounded-xl shadow-sm border border-gray-100" />
+                  <img src={generatedInvoiceImg} alt="Invoice" className="w-full h-auto rounded-xl shadow-sm border border-gray-100 dark:border-slate-700" />
                 </div>
               ) : (
-                <div ref={invoiceRef} className="bg-white p-8 max-w-sm mx-auto border border-gray-200 shadow-sm rounded-xl">
+                <div ref={invoiceRef} className="bg-white dark:bg-slate-800 p-8 max-w-sm mx-auto border border-gray-200 dark:border-slate-600 shadow-sm rounded-xl">
                   {/* Header */}
                   <div className="text-center mb-6">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#133c38] text-white mb-4 shadow-md">
                       <FishSymbol className="w-8 h-8" />
                     </div>
-                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">دار البحر</h1>
-                    <p className="text-sm font-medium text-slate-500 uppercase tracking-widest mt-1">Dar Al Bahr</p>
+                    <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">دار البحر</h1>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Dar Al Bahr</p>
                     <p className="text-xs text-slate-400 mt-1">Restaurant & Cafe</p>
                   </div>
 
                   {/* Order Info */}
-                  <div className="border-t border-b border-gray-100 py-3 mb-6 text-sm flex justify-between text-slate-600">
+                  <div className="border-t border-b border-gray-100 dark:border-slate-700 py-3 mb-6 text-sm flex justify-between text-slate-600 dark:text-slate-300">
                     <div>
-                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'التاريخ' : 'Date'}:</span> {new Date().toLocaleDateString('en-GB')}</p>
-                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'الوقت' : 'Time'}:</span> {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p><span className="font-bold text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'التاريخ' : 'Date'}:</span> {new Date().toLocaleDateString('en-GB')}</p>
+                      <p><span className="font-bold text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'الوقت' : 'Time'}:</span> {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <div className="text-right">
-                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'رقم الطلب' : 'Order'}:</span> #{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</p>
-                      <p><span className="font-bold text-slate-800">{lang === 'ar' ? 'طاولة' : 'Table'}:</span> {tableNumber || '-'}</p>
+                      <p><span className="font-bold text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'رقم الطلب' : 'Order'}:</span> #{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</p>
+                      <p><span className="font-bold text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'طاولة' : 'Table'}:</span> {tableNumber || '-'}</p>
                     </div>
                   </div>
 
                   {/* Items Header */}
-                  <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100">
+                  <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100 dark:border-slate-700">
                     <span className="w-8">{lang === 'ar' ? 'كمية' : 'Qty'}</span>
                     <span className="flex-1">{lang === 'ar' ? 'الصنف' : 'Item'}</span>
                     <span className="text-right">{lang === 'ar' ? 'المجموع' : 'Total'}</span>
@@ -573,12 +614,12 @@ export default function App() {
                   <div className="space-y-3 mb-6">
                     {cart.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-start text-sm">
-                        <div className="w-8 font-bold text-slate-800">{item.quantity}</div>
+                        <div className="w-8 font-bold text-slate-800 dark:text-slate-100">{item.quantity}</div>
                         <div className="flex-1 pr-4">
-                          <p className="font-bold text-slate-800">{item.menuItem.name[lang]}</p>
-                          <p className="text-xs text-slate-500">{item.menuItem.price.toFixed(2)} {t.currency}</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-100">{item.menuItem.name[lang]}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{item.menuItem.price.toFixed(2)} {t.currency}</p>
                         </div>
-                        <div className="font-bold text-slate-800 whitespace-nowrap text-right">
+                        <div className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap text-right">
                           {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
                         </div>
                       </div>
@@ -586,12 +627,12 @@ export default function App() {
                   </div>
 
                   {/* Totals */}
-                  <div className="border-t-2 border-dashed border-gray-200 pt-4 mb-8">
-                    <div className="flex justify-between items-center mb-2 text-slate-600 text-sm">
+                  <div className="border-t-2 border-dashed border-gray-200 dark:border-slate-600 pt-4 mb-8">
+                    <div className="flex justify-between items-center mb-2 text-slate-600 dark:text-slate-300 text-sm">
                       <span>{lang === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
                       <span>{totalPrice.toFixed(2)} {t.currency}</span>
                     </div>
-                    <div className="flex justify-between items-center text-lg font-black text-slate-800 mt-2 pt-2 border-t border-gray-100">
+                    <div className="flex justify-between items-center text-lg font-black text-slate-800 dark:text-slate-100 mt-2 pt-2 border-t border-gray-100 dark:border-slate-700">
                       <span>{t.total}</span>
                       <span className="text-2xl text-[#133c38]">{totalPrice.toFixed(2)} {t.currency}</span>
                     </div>
@@ -599,10 +640,10 @@ export default function App() {
                   
                   {/* Footer */}
                   <div className="text-center">
-                    <p className="text-sm font-bold text-slate-800 mb-1">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">
                       {lang === 'ar' ? 'شكرا لزيارتكم!' : 'Thank you for your visit!'}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {lang === 'ar' ? 'نتمنى رؤيتكم قريباً' : 'Hope to see you soon'}
                     </p>
                     <div className="mt-4 text-slate-300">
@@ -613,7 +654,7 @@ export default function App() {
               )}
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-gray-100 shrink-0">
+            <div className="p-6 bg-slate-50 border-t border-gray-100 dark:border-slate-700 shrink-0">
               {!generatedInvoiceImg && (
                 <button
                   onClick={handleDownloadInvoice}
@@ -644,7 +685,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => setGeneratedInvoiceImg(null)}
-                    className="w-full bg-transparent hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-transparent hover:bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
                   >
                     <span>{lang === 'ar' ? 'الرجوع للفاتورة' : 'Back to Invoice'}</span>
                   </button>
