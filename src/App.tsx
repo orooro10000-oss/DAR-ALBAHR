@@ -6,23 +6,24 @@ import {
 import { menuItems as initialMenuItems, translations } from './data';
 import { Language, CartItem, MenuItem } from './types';
 import { toPng } from 'html-to-image';
+import { motion } from 'motion/react';
 
-const getIconForItem = (id: string, className: string = "w-10 h-10") => {
-  if (id.includes('friture') || id.includes('fish')) return <Fish className={className} />;
-  if (id.includes('sardine')) return <FishSymbol className={className} />;
-  if (id.includes('grilled')) return <Flame className={className} />;
-  if (id.includes('meat') || id.includes('beef')) return <Beef className={className} />;
-  if (id.includes('chicken')) return <UtensilsCrossed className={className} />;
-  if (id.includes('tagine')) return <Soup className={className} />;
-  if (id.includes('bissara')) return <Soup className={className} />;
-  if (id.includes('salad')) return <Salad className={className} />;
-  if (id.includes('fries')) return <Utensils className={className} />;
-  if (id.includes('sauce')) return <Droplet className={className} />;
-  if (id.includes('rice') || id.includes('paella')) return <Soup className={className} />;
-  if (id.includes('water')) return <GlassWater className={className} />;
-  if (id.includes('soda')) return <CupSoda className={className} />;
-  if (id.includes('tea') || id.includes('coffee')) return <Coffee className={className} />;
-  return <Utensils className={className} />;
+const getItemStyle = (id: string) => {
+  if (id.includes('friture') || id.includes('fish')) return { icon: Fish, bg: 'from-blue-500 to-cyan-400', shadow: 'shadow-cyan-500/40' };
+  if (id.includes('sardine')) return { icon: FishSymbol, bg: 'from-cyan-500 to-teal-400', shadow: 'shadow-teal-500/40' };
+  if (id.includes('grilled')) return { icon: Flame, bg: 'from-orange-500 to-amber-400', shadow: 'shadow-orange-500/40' };
+  if (id.includes('meat') || id.includes('beef')) return { icon: Beef, bg: 'from-red-500 to-orange-500', shadow: 'shadow-red-500/40' };
+  if (id.includes('chicken')) return { icon: UtensilsCrossed, bg: 'from-amber-500 to-yellow-400', shadow: 'shadow-amber-500/40' };
+  if (id.includes('tagine')) return { icon: Soup, bg: 'from-orange-600 to-amber-500', shadow: 'shadow-orange-600/40' };
+  if (id.includes('bissara')) return { icon: Soup, bg: 'from-emerald-500 to-green-400', shadow: 'shadow-emerald-500/40' };
+  if (id.includes('salad')) return { icon: Salad, bg: 'from-green-500 to-emerald-400', shadow: 'shadow-green-500/40' };
+  if (id.includes('fries')) return { icon: Utensils, bg: 'from-yellow-400 to-amber-300', shadow: 'shadow-yellow-500/40' };
+  if (id.includes('sauce')) return { icon: Droplet, bg: 'from-rose-500 to-pink-400', shadow: 'shadow-rose-500/40' };
+  if (id.includes('rice') || id.includes('paella')) return { icon: Soup, bg: 'from-yellow-500 to-orange-400', shadow: 'shadow-yellow-500/40' };
+  if (id.includes('water')) return { icon: GlassWater, bg: 'from-cyan-400 to-blue-400', shadow: 'shadow-cyan-500/40' };
+  if (id.includes('soda')) return { icon: CupSoda, bg: 'from-violet-500 to-purple-400', shadow: 'shadow-violet-500/40' };
+  if (id.includes('tea') || id.includes('coffee')) return { icon: Coffee, bg: 'from-amber-700 to-orange-600', shadow: 'shadow-amber-700/40' };
+  return { icon: Utensils, bg: 'from-slate-500 to-gray-400', shadow: 'shadow-slate-500/40' };
 };
 
 export default function App() {
@@ -43,10 +44,18 @@ export default function App() {
     }
     return [];
   });
+  const [sentItems, setSentItems] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('dar_albahr_sent_cart_v10');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { return []; }
+    }
+    return [];
+  });
   const [tableNumber, setTableNumber] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<{ flavor: string; sugar: string }>({ flavor: 'mint', sugar: 'normal' });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [generatedInvoiceImg, setGeneratedInvoiceImg] = useState<string | null>(null);
@@ -68,26 +77,28 @@ export default function App() {
   useEffect(() => { localStorage.setItem('dar_albahr_menu_v10', JSON.stringify(menu)); }, [menu]);
   useEffect(() => { localStorage.setItem('dar_albahr_lang', lang); }, [lang]);
   useEffect(() => { localStorage.setItem('dar_albahr_cart_v10', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem('dar_albahr_sent_cart_v10', JSON.stringify(sentItems)); }, [sentItems]);
 
   const t = translations[lang];
   const isRtl = lang === 'ar';
 
   const toggleLanguage = () => setLang(lang === 'en' ? 'ar' : 'en');
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, options?: { flavor?: string; sugar?: string }) => {
     setCart((prev) => {
-      const existing = prev.find((c) => c.menuItem.id === item.id);
+      const cartItemId = options ? `${item.id}_${options.flavor}_${options.sugar}` : item.id;
+      const existing = prev.find((c) => (c.cartItemId || c.menuItem.id) === cartItemId);
       if (existing) {
-        return prev.map((c) => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
+        return prev.map((c) => (c.cartItemId || c.menuItem.id) === cartItemId ? { ...c, quantity: c.quantity + 1 } : c);
       }
-      return [...prev, { menuItem: item, quantity: 1 }];
+      return [...prev, { cartItemId, menuItem: item, quantity: 1, options }];
     });
   };
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = (cartItemId: string, delta: number) => {
     setCart((prev) =>
       prev.map((c) => {
-        if (c.menuItem.id === id) {
+        if ((c.cartItemId || c.menuItem.id) === cartItemId) {
           const newQty = c.quantity + delta;
           return { ...c, quantity: Math.max(0, newQty) };
         }
@@ -118,21 +129,54 @@ export default function App() {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  
+  const grandTotalPrice = [...sentItems, ...cart].reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+  const grandTotalItems = [...sentItems, ...cart].reduce((sum, item) => sum + item.quantity, 0);
+
+  const getOptionLabel = (type: string, value: string, language: string) => {
+    if (type === 'flavor') {
+      if (value === 'mint') return language === 'ar' ? 'بنعناع' : 'Mint';
+      if (value === 'no_mint') return language === 'ar' ? 'بلا نعناع' : 'No Mint';
+      if (value === 'louisa') return language === 'ar' ? 'باللويزة' : 'Louisa';
+    }
+    if (type === 'sugar') {
+      if (value === 'extra') return language === 'ar' ? 'زايد سكر' : 'Extra Sugar';
+      if (value === 'normal') return language === 'ar' ? 'سكر عادي' : 'Normal Sugar';
+      if (value === 'less') return language === 'ar' ? 'ناقص سكر' : 'Less Sugar';
+      if (value === 'none') return language === 'ar' ? 'مسوس' : 'No Sugar';
+    }
+    return '';
+  };
 
   const handleSendOrder = () => {
     if (!tableNumber.trim()) { alert(t.tableRequired); return; }
     if (cart.length === 0) return;
 
     const phoneNumber = '212676025001';
-    let text = `*New Order - ${t.restaurantName}*\nTable: ${tableNumber}\n------------------------\n`;
+    let text = sentItems.length > 0 ? `*Addition to Table: ${tableNumber} - ${t.restaurantName}*\n------------------------\n` : `*New Order - ${t.restaurantName}*\nTable: ${tableNumber}\n------------------------\n`;
+    
     cart.forEach(item => {
-      text += `${item.quantity}x ${item.menuItem.name[lang]} - ${item.menuItem.price * item.quantity} ${t.currency}\n`;
+      let itemOptions = '';
+      if (item.options) {
+        itemOptions = ` (${getOptionLabel('flavor', item.options.flavor || '', lang)}, ${getOptionLabel('sugar', item.options.sugar || '', lang)})`;
+      }
+      text += `${item.quantity}x ${item.menuItem.name[lang]}${itemOptions} - ${item.menuItem.price * item.quantity} ${t.currency}\n`;
     });
-    text += `------------------------\n*${t.total}: ${totalPrice} ${t.currency}*`;
+    
+    if (sentItems.length > 0) {
+      text += `------------------------\n*Addition Total: ${totalPrice} ${t.currency}*`;
+      const grandTotal = [...sentItems, ...cart].reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+      text += `\n*Grand Total: ${grandTotal} ${t.currency}*`;
+    } else {
+      text += `------------------------\n*${t.total}: ${totalPrice} ${t.currency}*`;
+    }
 
     const encodedText = encodeURIComponent(text);
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
+    
+    setSentItems(prev => [...prev, ...cart]);
+    setCart([]);
     setShowInvoice(true);
   };
 
@@ -181,6 +225,7 @@ export default function App() {
 
   const finishOrder = () => {
     setCart([]);
+    setSentItems([]);
     setTableNumber('');
     setShowInvoice(false);
     setGeneratedInvoiceImg(null);
@@ -284,13 +329,26 @@ export default function App() {
             
             <div className="grid gap-4">
               {(items as MenuItem[]).map((item) => {
-                const cartItem = cart.find(c => c.menuItem.id === item.id);
-                const quantity = cartItem ? cartItem.quantity : 0;
+                const itemCartItems = cart.filter(c => c.menuItem.id === item.id);
+                const quantity = itemCartItems.reduce((sum, c) => sum + c.quantity, 0);
+                const cartItem = itemCartItems[0];
+                
+                const style = getItemStyle(item.id);
                 
                 return (
-                  <div key={item.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex gap-4 cursor-pointer" onClick={() => !isEditing && setSelectedMenuItem(item)}>
-                    <div className="w-24 h-24 rounded-2xl bg-[#f0e6d2] dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center p-2 text-teal-800 dark:text-teal-200">
-                       {getIconForItem(item.id, "w-10 h-10")}
+                  <div key={item.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex gap-4 cursor-pointer" onClick={() => { if (!isEditing) { setSelectedMenuItem(item); setSelectedOptions({ flavor: 'mint', sugar: 'normal' }); } }}>
+                    <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${style.bg} ${style.shadow} shadow-lg shrink-0 overflow-hidden flex items-center justify-center p-2 text-white relative`}>
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                      >
+                       <style.icon className="w-12 h-12 drop-shadow-md" strokeWidth={1.5} />
+                      </motion.div>
+                      <motion.div 
+                        className="absolute inset-0 bg-white opacity-0"
+                        animate={{ opacity: [0, 0.2, 0] }}
+                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                      />
                     </div>
                     
                     <div className="flex-1 flex flex-col justify-between">
@@ -338,17 +396,17 @@ export default function App() {
                         {!isEditing && (
                           quantity > 0 ? (
                             <div className="flex items-center gap-3 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-600">
-                              <button onClick={() => updateQuantity(item.id, -1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500">
+                              <button onClick={() => item.id === 'tea' ? setSelectedMenuItem(item) : updateQuantity(cartItem?.cartItemId || item.id, -1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500">
                                 {quantity === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                               </button>
                               <span className="w-4 text-center font-bold text-sm">{quantity}</span>
-                              <button onClick={() => updateQuantity(item.id, 1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:text-teal-100">
+                              <button onClick={() => item.id === 'tea' ? setSelectedMenuItem(item) : updateQuantity(cartItem?.cartItemId || item.id, 1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:text-teal-100">
                                 <Plus className="w-4 h-4" />
                               </button>
                             </div>
                           ) : (
                             <button 
-                              onClick={() => addToCart(item)}
+                              onClick={() => item.id === 'tea' ? setSelectedMenuItem(item) : addToCart(item)}
                               className="bg-[#247065] text-white px-5 py-2 rounded-xl font-bold text-sm shadow-sm hover:bg-[#1a554c] transition-colors"
                             >
                               {t.addToCart}
@@ -367,56 +425,68 @@ export default function App() {
       </main>
 
       {/* Floating Cart Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="max-w-xl mx-auto p-4 pointer-events-auto flex flex-col gap-2">
-          {cart.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-xl border border-gray-100 dark:border-slate-700 flex items-center gap-4">
-              <label htmlFor="mainTableNumber" className="text-sm font-bold text-teal-900 dark:text-teal-100 whitespace-nowrap">
-                {t.tableNumber}:
-              </label>
-              <input
-                id="mainTableNumber"
-                type="text"
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value)}
-                className="flex-1 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl px-4 py-2 border border-gray-200 dark:border-slate-600 focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 outline-none transition-all font-bold"
-                placeholder={lang === 'ar' ? 'أدخل رقم الطاولة' : 'Table num'}
-              />
-            </div>
-          )}
-          <div className="bg-[#133c38] rounded-3xl p-4 shadow-2xl flex items-center justify-between text-white border border-teal-700/50">
-            <button
-              onClick={() => setIsCartOpen(true)}
-              disabled={cart.length === 0}
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all ${
-                cart.length > 0 
-                  ? 'bg-white/10 hover:bg-white/20' 
-                  : 'opacity-50 cursor-not-allowed bg-white/5'
-              }`}
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span>{lang === 'ar' ? 'عرض الطلب' : 'View Cart'}</span>
-            </button>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right flex flex-col items-end">
-                 <span className="text-xs text-teal-100/70">{t.total}</span>
-                 <span className="font-bold text-lg leading-tight">{totalPrice.toFixed(2)} {t.currency}</span>
+      {(cart.length > 0 || sentItems.length > 0) && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+          <div className="max-w-xl mx-auto p-4 pointer-events-auto flex flex-col gap-2">
+            {cart.length > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-xl border border-gray-100 dark:border-slate-700 flex items-center gap-4">
+                <label htmlFor="mainTableNumber" className="text-sm font-bold text-teal-900 dark:text-teal-100 whitespace-nowrap">
+                  {t.tableNumber}:
+                </label>
+                <input
+                  id="mainTableNumber"
+                  type="text"
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  className="flex-1 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl px-4 py-2 border border-gray-200 dark:border-slate-600 focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 outline-none transition-all font-bold"
+                  placeholder={lang === 'ar' ? 'أدخل رقم الطاولة' : 'Table num'}
+                />
               </div>
-              <div className="w-10 h-10 rounded-xl bg-[#e65c3b] flex items-center justify-center font-bold text-lg shadow-inner">
-                {totalItems}
+            )}
+            <div className="bg-[#133c38] rounded-3xl p-4 shadow-2xl flex items-center justify-between text-white border border-teal-700/50">
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all bg-white/10 hover:bg-white/20"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span>{lang === 'ar' ? 'عرض الطلب' : 'View Cart'}</span>
+              </button>
+              
+              <div className="flex items-center gap-4">
+                <div className="text-right flex flex-col items-end">
+                   <span className="text-xs text-teal-100/70">{t.total}</span>
+                   <span className="font-bold text-lg leading-tight">{grandTotalPrice.toFixed(2)} {t.currency}</span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-[#e65c3b] flex items-center justify-center font-bold text-lg shadow-inner">
+                  {grandTotalItems}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Item Details Modal */}
       {selectedMenuItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedMenuItem(null)}>
           <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-            <div className="relative h-48 bg-[#f0e6d2] dark:bg-slate-700 flex items-center justify-center text-teal-800 dark:text-teal-200">
-              {getIconForItem(selectedMenuItem.id, "w-24 h-24 opacity-80")}
+            <div className={`relative h-48 bg-gradient-to-br ${getItemStyle(selectedMenuItem.id).bg} flex items-center justify-center text-white overflow-hidden`}>
+              {(() => { 
+                const S = getItemStyle(selectedMenuItem.id).icon; 
+                return (
+                  <motion.div
+                    animate={{ scale: [1, 1.15, 1], rotate: [0, 3, -3, 0] }}
+                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                  >
+                    <S className="w-24 h-24 drop-shadow-lg opacity-90 relative z-10" strokeWidth={1.5} />
+                  </motion.div>
+                );
+              })()}
+              <motion.div 
+                className="absolute inset-0 bg-white opacity-0"
+                animate={{ opacity: [0, 0.15, 0] }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              />
               <button 
                 onClick={() => setSelectedMenuItem(null)}
                 className="absolute top-4 right-4 p-2 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-md rounded-full text-slate-800 dark:text-slate-100 transition-colors shadow-sm"
@@ -429,23 +499,57 @@ export default function App() {
               <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{selectedMenuItem.name[lang]}</h3>
               <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">{selectedMenuItem.description[lang]}</p>
               
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <span className="text-2xl font-black text-[#e65c3b]">{selectedMenuItem.price.toFixed(2)} {t.currency}</span>
               </div>
 
+              {selectedMenuItem.id === 'tea' && (
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">{lang === 'ar' ? 'النكهة' : 'Flavor'}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['mint', 'no_mint', 'louisa'].map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setSelectedOptions({ ...selectedOptions, flavor: f })}
+                          className={`py-2 px-1 text-sm font-medium rounded-xl border ${selectedOptions.flavor === f ? 'bg-teal-50 border-teal-600 text-teal-800 dark:bg-teal-900/30 dark:border-teal-400 dark:text-teal-200' : 'bg-white border-gray-200 text-gray-600 dark:bg-slate-800 dark:border-slate-600 dark:text-gray-300'}`}
+                        >
+                          {getOptionLabel('flavor', f, lang)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">{lang === 'ar' ? 'السكر' : 'Sugar'}</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['extra', 'normal', 'less', 'none'].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setSelectedOptions({ ...selectedOptions, sugar: s })}
+                          className={`py-2 px-1 text-sm font-medium rounded-xl border ${selectedOptions.sugar === s ? 'bg-teal-50 border-teal-600 text-teal-800 dark:bg-teal-900/30 dark:border-teal-400 dark:text-teal-200' : 'bg-white border-gray-200 text-gray-600 dark:bg-slate-800 dark:border-slate-600 dark:text-gray-300'}`}
+                        >
+                          {getOptionLabel('sugar', s, lang)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action button inside modal */}
               {(() => {
-                const cartItem = cart.find(c => c.menuItem.id === selectedMenuItem.id);
+                const cartItemId = selectedMenuItem.id === 'tea' ? `${selectedMenuItem.id}_${selectedOptions.flavor}_${selectedOptions.sugar}` : selectedMenuItem.id;
+                const cartItem = cart.find(c => (c.cartItemId || c.menuItem.id) === cartItemId);
                 const quantity = cartItem ? cartItem.quantity : 0;
                 
                 return quantity > 0 ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between bg-[#f8f6f0] dark:bg-slate-900 rounded-2xl p-2 border border-gray-200 dark:border-slate-600">
-                      <button onClick={() => updateQuantity(selectedMenuItem.id, -1)} className="p-4 rounded-xl bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500 transition-colors">
+                      <button onClick={() => updateQuantity(cartItemId, -1)} className="p-4 rounded-xl bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500 transition-colors">
                         {quantity === 1 ? <Trash2 className="w-5 h-5" /> : <Minus className="w-5 h-5" />}
                       </button>
                       <span className="text-xl font-bold">{quantity}</span>
-                      <button onClick={() => updateQuantity(selectedMenuItem.id, 1)} className="p-4 rounded-xl bg-[#247065] text-white shadow-sm hover:bg-[#1a554c] transition-colors">
+                      <button onClick={() => updateQuantity(cartItemId, 1)} className="p-4 rounded-xl bg-[#247065] text-white shadow-sm hover:bg-[#1a554c] transition-colors">
                         <Plus className="w-5 h-5" />
                       </button>
                     </div>
@@ -458,7 +562,7 @@ export default function App() {
                   </div>
                 ) : (
                   <button 
-                    onClick={() => addToCart(selectedMenuItem)}
+                    onClick={() => addToCart(selectedMenuItem, selectedMenuItem.id === 'tea' ? selectedOptions : undefined)}
                     className="w-full bg-[#247065] text-white py-4 rounded-2xl font-bold text-lg shadow-sm hover:bg-[#1a554c] transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus className="w-5 h-5" />
@@ -490,37 +594,109 @@ export default function App() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50 dark:bg-slate-900/50">
-              {cart.length === 0 ? (
+              {cart.length === 0 && sentItems.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                   <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-20" />
                   <p>{lang === 'ar' ? 'السلة فارغة' : 'Cart is empty'}</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {cart.map((item) => (
-                    <div key={item.menuItem.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl bg-[#f0e6d2] dark:bg-slate-700 flex items-center justify-center text-teal-800 dark:text-teal-200 shrink-0">
-                        {getIconForItem(item.menuItem.id, "w-8 h-8")}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <h4 className="font-bold text-slate-800 dark:text-slate-100">{item.menuItem.name[lang]}</h4>
-                        <div className="text-[#e65c3b] font-bold text-sm mt-1">
-                          {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-600 shrink-0">
-                        <button onClick={() => updateQuantity(item.menuItem.id, -1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500">
-                          {item.quantity === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-                        </button>
-                        <span className="w-6 text-center font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.menuItem.id, 1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:text-teal-100">
-                          <Plus className="w-4 h-4" />
-                        </button>
+                <div className="space-y-6">
+                  {sentItems.length > 0 && (
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-500 uppercase tracking-wider mb-3">
+                        {lang === 'ar' ? 'طلبات سابقة' : 'Previously Ordered'}
+                      </h4>
+                      <div className="space-y-3 opacity-75 hover:opacity-100 transition-opacity">
+                        {sentItems.map((item, idx) => {
+                          const style = getItemStyle(item.menuItem.id);
+                          return (
+                          <div key={`sent-${idx}`} className="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${style.bg} opacity-90 flex items-center justify-center text-white shrink-0 relative shadow-sm overflow-hidden`}>
+                              <motion.div
+                                animate={{ scale: [1, 1.05, 1] }}
+                                transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                              >
+                                <style.icon className="w-6 h-6 drop-shadow-sm relative z-10" strokeWidth={1.5} />
+                              </motion.div>
+                              <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-white dark:border-slate-800 shadow-sm z-20">
+                                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{item.menuItem.name[lang]}</h4>
+                              {item.options && (
+                                <div className="text-[10px] text-slate-500 mt-0.5 flex flex-wrap gap-1">
+                                  <span>{getOptionLabel('flavor', item.options.flavor || '', lang)}</span>
+                                  <span>-</span>
+                                  <span>{getOptionLabel('sugar', item.options.sugar || '', lang)}</span>
+                                </div>
+                              )}
+                              <div className="text-slate-500 font-medium text-xs mt-0.5">
+                                {item.quantity} x {item.menuItem.price.toFixed(2)} {t.currency}
+                              </div>
+                            </div>
+                            <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                              {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
+                            </div>
+                          </div>
+                        )})}
                       </div>
                     </div>
-                  ))}
+                  )}
+                  
+                  {cart.length > 0 && (
+                    <div>
+                      {sentItems.length > 0 && (
+                        <h4 className="font-bold text-sm text-slate-500 uppercase tracking-wider mb-3 mt-4">
+                          {lang === 'ar' ? 'طلبات جديدة' : 'New Items'}
+                        </h4>
+                      )}
+                      <div className="space-y-4">
+                        {cart.map((item) => {
+                          const style = getItemStyle(item.menuItem.id);
+                          return (
+                          <div key={item.cartItemId || item.menuItem.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex items-center gap-4">
+                            <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${style.bg} ${style.shadow} shadow-md flex items-center justify-center text-white shrink-0 relative overflow-hidden`}>
+                              <motion.div
+                                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                              >
+                                <style.icon className="w-8 h-8 drop-shadow-sm relative z-10" strokeWidth={1.5} />
+                              </motion.div>
+                              <motion.div 
+                                className="absolute inset-0 bg-white opacity-0"
+                                animate={{ opacity: [0, 0.2, 0] }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                              />
+                            </div>
+                            
+                            <div className="flex-1">
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100">{item.menuItem.name[lang]}</h4>
+                              {item.options && (
+                                <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-1">
+                                  <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">{getOptionLabel('flavor', item.options.flavor || '', lang)}</span>
+                                  <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">{getOptionLabel('sugar', item.options.sugar || '', lang)}</span>
+                                </div>
+                              )}
+                              <div className="text-[#e65c3b] font-bold text-sm mt-1">
+                                {(item.menuItem.price * item.quantity).toFixed(2)} {t.currency}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 bg-[#f8f6f0] dark:bg-slate-900 rounded-xl p-1 border border-gray-200 dark:border-slate-600 shrink-0">
+                              <button onClick={() => updateQuantity(item.cartItemId || item.menuItem.id, -1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-gray-600 hover:text-red-500">
+                                {item.quantity === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                              </button>
+                              <span className="w-6 text-center font-bold">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.cartItemId || item.menuItem.id, 1)} className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:text-teal-100">
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )})}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -612,11 +788,16 @@ export default function App() {
 
                   {/* Items */}
                   <div className="space-y-3 mb-6">
-                    {cart.map((item, idx) => (
+                    {[...sentItems, ...cart].map((item, idx) => (
                       <div key={idx} className="flex justify-between items-start text-sm">
                         <div className="w-8 font-bold text-slate-800 dark:text-slate-100">{item.quantity}</div>
                         <div className="flex-1 pr-4">
                           <p className="font-bold text-slate-800 dark:text-slate-100">{item.menuItem.name[lang]}</p>
+                          {item.options && (
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                              {getOptionLabel('flavor', item.options.flavor || '', lang)} - {getOptionLabel('sugar', item.options.sugar || '', lang)}
+                            </p>
+                          )}
                           <p className="text-xs text-slate-500 dark:text-slate-400">{item.menuItem.price.toFixed(2)} {t.currency}</p>
                         </div>
                         <div className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap text-right">
@@ -630,11 +811,11 @@ export default function App() {
                   <div className="border-t-2 border-dashed border-gray-200 dark:border-slate-600 pt-4 mb-8">
                     <div className="flex justify-between items-center mb-2 text-slate-600 dark:text-slate-300 text-sm">
                       <span>{lang === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
-                      <span>{totalPrice.toFixed(2)} {t.currency}</span>
+                      <span>{[...sentItems, ...cart].reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0).toFixed(2)} {t.currency}</span>
                     </div>
                     <div className="flex justify-between items-center text-lg font-black text-slate-800 dark:text-slate-100 mt-2 pt-2 border-t border-gray-100 dark:border-slate-700">
                       <span>{t.total}</span>
-                      <span className="text-2xl text-[#133c38]">{totalPrice.toFixed(2)} {t.currency}</span>
+                      <span className="text-2xl text-[#133c38]">{[...sentItems, ...cart].reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0).toFixed(2)} {t.currency}</span>
                     </div>
                   </div>
                   

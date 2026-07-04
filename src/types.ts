@@ -10,6 +10,11 @@ export interface MenuItem {
 }
 
 export interface CartItem {
+  cartItemId?: string;
   menuItem: MenuItem;
   quantity: number;
+  options?: {
+    flavor?: string;
+    sugar?: string;
+  };
 }
