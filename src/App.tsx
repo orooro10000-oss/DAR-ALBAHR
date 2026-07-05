@@ -38,14 +38,14 @@ export default function App() {
     return initialMenuItems;
   });
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('dar_albahr_cart_v10');
+    const saved = sessionStorage.getItem('dar_albahr_cart_v10');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { return []; }
     }
     return [];
   });
   const [sentItems, setSentItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('dar_albahr_sent_cart_v10');
+    const saved = sessionStorage.getItem('dar_albahr_sent_cart_v10');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { return []; }
     }
@@ -76,8 +76,8 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('dar_albahr_menu_v10', JSON.stringify(menu)); }, [menu]);
   useEffect(() => { localStorage.setItem('dar_albahr_lang', lang); }, [lang]);
-  useEffect(() => { localStorage.setItem('dar_albahr_cart_v10', JSON.stringify(cart)); }, [cart]);
-  useEffect(() => { localStorage.setItem('dar_albahr_sent_cart_v10', JSON.stringify(sentItems)); }, [sentItems]);
+  useEffect(() => { sessionStorage.setItem('dar_albahr_cart_v10', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { sessionStorage.setItem('dar_albahr_sent_cart_v10', JSON.stringify(sentItems)); }, [sentItems]);
 
   const t = translations[lang];
   const isRtl = lang === 'ar';
